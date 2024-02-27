@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Publications en attente de validation</title>
+</head>
+<body>
+    <h1>Publications en attente de validation</h1>
+    <ul>
+        {% for post in pending_posts %}
+            <li>
+                <h2>{{ post.title }}</h2>
+                <p>{{ post.short_description }}</p>
+                <p>Date de création : {{ post.date_created }}</p>
+                <!-- Ajoutez d'autres informations ici si nécessaire -->
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
