@@ -1,4 +1,7 @@
 from django.shortcuts import render,redirect
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -8,7 +11,7 @@ from django.contrib.auth.models import User
 from .forms import UserCreationForm
 import json
 from newsApp import models, forms
-from .models import Post
+from .models import Category, Post
 
 
 
@@ -22,29 +25,37 @@ def context_data():
     return context
 
 # Create your views here.
+from django.contrib.auth import login
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+
 def signup(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            messages.success(request, "Inscription réussie." )
-            return redirect('login-page')
+            messages.success(request, "Inscription réussie.")
+            return redirect('login-page')  # Redirige vers la page de connexion après inscription réussie
         else:
             messages.error(request, "Inscription non réussie. Informations invalides.")
     else:
         form = UserCreationForm()
     return render(request, 'signup.html', {'form': form})
 
+
 def home(request):
-    context = context_data()
-    posts = models.Post.objects.filter(status = 1).order_by('-date_created').all()
-    context['page'] = 'home'
-    context['page_title'] = 'Home'
-    context['latest_top'] = posts[:2]
-    context['latest_bottom'] = posts[2:12]
-    print(posts)
+    # Récupérer uniquement les posts approuvés et publiés
+    approved_posts = Post.objects.filter(status='approved', is_published=True)
+    
+    # Récupérer toutes les catégories
+    categories = Category.objects.all()
+
+    # Passer les posts et les catégories à votre template
+    context = {'approved_posts': approved_posts, 'categories': categories}
+
     return render(request, 'home.html', context)
+
 
 #login
 def login_user(request):
@@ -148,8 +159,7 @@ def save_post(request):
         form = forms.savePost(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
-            # Définir le statut du post comme "en cours de validation"
-            # post.status = 'pending'  # Commented out to make the "status" field not mandatory
+            post.status = 'pending'  # Définir le statut du post comme "en attente de validation"
             post.save()
             resp['id'] = post.id
             resp['status'] = 'success'
@@ -163,6 +173,7 @@ def save_post(request):
     else:
         resp['msg'] = "La requête ne contient aucune donnée."
     return JsonResponse(resp)
+
 
 
 def view_post(request, pk=None):
@@ -179,14 +190,14 @@ def view_post(request, pk=None):
     return render(request, 'single_post.html', context)
 
 def save_comment(request):
-    resp={'status':'failed', 'msg':'','id':None}
+    resp = {'status': 'failed', 'msg': '', 'id': None}
     if request.method == 'POST':
-        if request.POST['id'] == '':
-            form = forms.saveComment(request.POST)
+        # Si l'utilisateur est connecté, ne pas rendre les champs 'name' et 'email' obligatoires
+        if request.user.is_authenticated:
+            form = forms.saveComment(request.POST, initial={'name': request.user.username, 'email': request.user.email})
         else:
-            comment = models.Comment.objects.get(id=request.POST['id'])
-            form = forms.saveComment(request.POST, instance= comment)
-    
+            form = forms.saveComment(request.POST)
+
         if form.is_valid():
             form.save()
             if request.POST['id'] == '':
@@ -202,10 +213,10 @@ def save_comment(request):
                     if not resp['msg'] == '':
                         resp['msg'] += str('<br />')
                     resp['msg'] += str(f"[{field.label}] {error}")
-
     else:
         resp['msg'] = "Request has no data sent."
     return HttpResponse(json.dumps(resp), content_type="application/json")
+
 
 @login_required
 def list_posts(request):
@@ -222,25 +233,27 @@ def list_posts(request):
     return render(request, 'posts.html', context)
 
 
-def category_posts(request,pk=None):
+def category_posts(request, pk=None):
     context = context_data()
     if pk is None:
-        messages.error(request,"File not Found")
+        messages.error(request, "File not Found")
         return redirect('home-page')
     try:
         category = models.Category.objects.get(id=pk)
     except:
-        messages.error(request,"File not Found")
+        messages.error(request, "File not Found")
         return redirect('home-page')
 
     context['category'] = category
     context['page'] = 'category_post'
     context['page_title'] = f'{category.name} Posts'
-    context['posts'] = models.Post.objects.filter(status = 1, category = category).all()
-        
-    context['latest'] = models.Post.objects.filter(status = 1).order_by('-date_created').all()[:10]
-    
+    # Récupérer uniquement les posts approuvés et publiés de cette catégorie
+    context['posts'] = models.Post.objects.filter(status='approved', is_published=True, category=category).all()
+
+    context['latest'] = models.Post.objects.filter(status='approved', is_published=True).order_by('-date_created').all()[:10]
+
     return render(request, 'category.html', context)
+
 
 @login_required
 def delete_post(request, pk = None):
@@ -275,3 +288,29 @@ def delete_comment(request, pk = None):
     
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
+@user_passes_test(lambda u: u.is_superuser)
+def manage_posts(request):
+    pending_posts = Post.objects.filter(status='pending')
+
+    return render(request, 'manage_posts.html', {'pending_posts': pending_posts})
+
+def approve_post(request, post_id):
+    # Récupérer la publication à approuver
+    post = Post.objects.get(pk=post_id)
+    
+    # Vérifier si la demande est une requête POST
+    if request.method == 'POST':
+        # Approuver la publication en changeant son statut
+        post.status = 'approved'
+        
+        # Publier la publication en changeant son statut à 'published'
+        post.is_published = True
+        
+        # Sauvegarder les modifications
+        post.save()
+        
+        # Rediriger l'utilisateur vers la page d'accueil
+        return redirect('home-page')  # Assurez-vous que 'home-page' est l'URL de votre page d'accueil
+    
+    # Si ce n'est pas une requête POST, simplement rediriger l'utilisateur vers la page d'accueil
+    return redirect('home-page')

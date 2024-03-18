@@ -1,4 +1,6 @@
-{% extends 'layouts/base.html' %}{% load static %}
+{% extends 'layouts/base.html' %}
+{% load static %}
+
 {% block content %}
 
 <!-- ##### Intro News Area Start ##### -->
@@ -22,42 +24,32 @@
 
                         <div class="tab-pane fade show active" id="nav-1" role="tabpanel" aria-labelledby="nav1">
                             <div class="row">
-                                {% for lpost in latest_top %}
-                                <!-- Single News Area -->
-                                <div class="col-12 col-sm-6">
-                                    <div class="single-blog-post style-2 mb-5">
-                                        <!-- Blog Thumbnail -->
-                                        <div class="blog-thumbnail">
-                                            <a href="{% url 'view-post' lpost.id %}"><img src="{{lpost.banner_path.url}}" alt="{{lpost.title}}"></a>
+                                {% for post in approved_posts %}
+                                <div class="tab-pane fade show active" id="nav-1" role="tabpanel" aria-labelledby="nav1">
+                                    <div class="row">
+                                        {% for post in approved_posts %}
+                                        {% if post.is_published %}
+                                        <!-- Single News Area -->
+                                        <div class="col-12 col-sm-6">
+                                            <div class="single-blog-post style-2 mb-5">
+                                                <!-- Blog Thumbnail -->
+                                                <div class="blog-thumbnail">
+                                                    <a href="{% url 'view-post' post.id %}"><img src="{{post.banner_path.url}}" alt="{{post.title}}"></a>
+                                                </div>
+                                
+                                                <!-- Blog Content -->
+                                                <div class="blog-content">
+                                                    <span class="post-date">{{post.date_created|date:"M d, Y"}}</span>
+                                                    <a href="{% url 'view-post' post.id %}" class="post-title">{{post.title}}</a>
+                                                    <a href="mailto:{{post.user.email}}" target="_blank" class="post-author">By {{post.user.username}}</a>
+                                                </div>
+                                            </div>
                                         </div>
-
-                                        <!-- Blog Content -->
-                                        <div class="blog-content">
-                                            <span class="post-date">{{lpost.date_created|date:"M d, Y"}}</span>
-                                            <a href="{% url 'view-post' lpost.id %}" class="post-title">{{lpost.title}}</a>
-                                            <a href="mailto:{{lpost.user.email}}" target="_blank" class="post-author">By {{lpost.user.username}}</a>
-                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
                                     </div>
-                                </div>
+                                </div>                                
                                 {% endfor %}
-                                {% for lpost in latest_bottom %}
-                                <!-- Single News Area -->
-                                <div class="col-12 col-sm-6">
-                                    <div class="single-blog-post d-flex style-4 mb-30">
-                                        <!-- Blog Thumbnail -->
-                                        <div class="blog-thumbnail">
-                                            <a href="{% url 'view-post' lpost.id %}"><img src="{{lpost.banner_path.url}}" alt="{{lpost.title}}"></a>
-                                        </div>
-
-                                        <!-- Blog Content -->
-                                        <div class="blog-content">
-                                            <span class="post-date">{{lpost.date_created|date:"M d, Y"}}</span>
-                                            <a href="{% url 'view-post' lpost.id %}" class="post-title">{{lpost.title}}</a>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-
                             </div>
                         </div>
                     </div>
@@ -89,4 +81,5 @@
     </div>
 </div>
 <!-- ##### Add Area End ##### -->
+
 {% endblock content %}

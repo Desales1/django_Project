@@ -12,6 +12,10 @@
                 <p>{{ post.short_description }}</p>
                 <p>Date de création : {{ post.date_created }}</p>
                 <!-- Ajoutez d'autres informations ici si nécessaire -->
+                <form action="{% url 'approve-post' post.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit">Approuver</button>
+                </form>
             </li>
         {% endfor %}
     </ul>

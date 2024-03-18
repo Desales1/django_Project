@@ -88,14 +88,14 @@ class savePost(forms.ModelForm):
 
 class saveComment(forms.ModelForm):
     post = forms.CharField(max_length=30,label="Post")
-    name = forms.CharField(max_length=250,label="Name")
-    email = forms.CharField(max_length=250,label="Email")
+    name = forms.CharField(max_length=250,label="Name", required=False)  # Ne pas rendre le champ obligatoire
+    email = forms.CharField(max_length=250,label="Email", required=False)  # Ne pas rendre le champ obligatoire
     subject = forms.CharField(max_length=250,label="Subject")
     message = forms.Textarea()
+
     class Meta():
         model = models.Comment
         fields = ('post', 'name', 'email', 'subject', 'message',)
-
     def clean_post(self):
         postID = self.cleaned_data['post']
         try:

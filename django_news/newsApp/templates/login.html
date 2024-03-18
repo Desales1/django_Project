@@ -1,4 +1,6 @@
-{% extends 'layouts/base_plain.html' %}{% load static %}{% block content %}
+{% extends 'layouts/base_plain.html' %}
+{% load static %}
+{% block content %}
 <style>
     main {
         height: 100%;
@@ -15,6 +17,10 @@
         object-fit: scale-down;
         object-position: center center;
     }
+
+    .success-message {
+        color: green;
+    }
 </style>
 <div class="d-flex flex-column w-100 justify-content-center align-items-center">
     <div class="mb-2">
@@ -30,6 +36,13 @@
             </div>
             <div class="card-body">
                 <div class="container-fluid">
+                    {% if messages %}
+                        <div class="alert alert-success">
+                            {% for message in messages %}
+                                {{ message }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                     <form id="login-user">
                         {% csrf_token %}
                         <div class="form-group mb-3">
@@ -56,15 +69,17 @@
         </div>
     </div>
 </div>
-{% endblock content %} {% block javascripts %}
+{% endblock content %}
+{% block javascripts %}
 <script>
     $(function() {
         $('#login-user').submit(function(e) {
             e.preventDefault();
             var _this = $(this)
             $('.err-msg').remove();
+            $('.success-message').remove(); // Supprimer les messages de succès précédents
             var el = $('<div>')
-            el.addClass("alert alert-danger err-msg")
+            el.addClass("alert success-message") // Utiliser la classe pour le style de message de succès
             el.hide()
             if (_this[0].checkValidity() == false) {
                 _this[0].reportValidity();
@@ -91,9 +106,17 @@
                 success: function(resp) {
                     if (typeof resp == 'object' && resp.status == 'success') {
                         el.removeClass("alert alert-danger err-msg")
+                        el.text(resp.msg); // Ajouter le contenu du message de succès
+                        $('#login-user').prepend(el); // Ajouter le message de succès au début du formulaire
+                        el.show('slow');
+                        $("html, body, .modal").scrollTop(0);
+                        end_loader();
                         location.href = "{% url 'home-page' %}"
                     } else if (resp.status == 'failed' && !!resp.msg) {
-                        el.text(resp.msg)
+                        var errorEl = $('<div>')
+                        errorEl.addClass("alert error-message"); // Utiliser la classe pour le style de message d'erreur
+                        errorEl.text(resp.msg);
+                        _this.prepend(errorEl);
                     } else {
                         el.text("An error occured", 'error');
                         end_loader();

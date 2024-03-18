@@ -16,22 +16,25 @@ class Category(models.Model):
 class Post(models.Model):
     STATUS_CHOICES = (
         ('pending', 'En attente de validation'),
-        ('published', 'Publié'),
+        ('approved', 'Approuvé'),
+        ('rejected', 'Rejeté'),
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, default="")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
     title = models.TextField()
     short_description = models.TextField()
     content = models.TextField()
     banner_path = models.ImageField(upload_to='news_bannner')
-    # status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')  # Commented out to avoid duplication
     meta_keywords = models.TextField()
     date_created = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(auto_now=True)
+    is_published = models.BooleanField(default=False)  # Champ pour suivre l'état de publication
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+
+
 
 
 

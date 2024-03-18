@@ -25,5 +25,6 @@ urlpatterns = [
     path('posts', views.list_posts, name="all-posts"),
     path('category/<int:pk>', views.category_posts, name="category-post"),
     path('delete_post/<int:pk>', views.delete_post, name="delete-post"),
+    path('approve-post/<int:post_id>/', views.approve_post, name='approve-post'),
     path('delete_comment/<int:pk>', views.delete_comment, name="delete-comment"),
 ]+ static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
